@@ -222,10 +222,82 @@ write.csv(combined_coffee_data, "combined_coffee_data.csv", row.names = FALSE)
 ```
 
 
+# Analysis Phase
 
+### Preparation of the environment for analysis
+So that I can transform data from wide to long format, I installed the reshape2 package.
 
+```{r}
+install.packages("reshape2")
+library(reshape2)
+```
 
+### Identification of Key Quality Factor of a Coffee Bean
+To identify the key quality factors significantly influencing the overall quality of a coffee bean, I employed correlation calculations between the sensory values of the coffee bean and the total cup points.
 
+I decided to compare correlation between aroma, flavor, aftertaste, acidity, body, balance, uniformity, clean cup, sweetness, cupper points and total cup points. This will be applied to arabica, robusta and their combined data for further analysis.
+
+```{r}
+arabica_correlation_matrix <-
+  cor(arabica_trimmed_data[, c(13:22, 23)])
+
+robusta_correlation_matrix <-
+  cor(robusta_trimmed_data[, c(13:22, 23)])
+
+combined_correlation_matrix <-
+  cor(combined_coffee_data[, c(13:22, 23)])
+```
+
+Melted correlation matrix for the 3 dataframes for visualization purposes
+
+```{r}
+arabica_melted_correlation <- melt(arabica_correlation_matrix)
+robusta_melted_correlation <- melt(robusta_correlation_matrix)
+combined_melted_correlation <- melt(combined_correlation_matrix)
+```
+
+To gain a deeper understanding of the data, I chose to visualize it using a heatmap. This allowed me to examine the strength of the correlation between each sensory value and the total cup points.
+
+```{r}
+ggplot(arabica_melted_correlation) +
+  geom_tile(mapping = aes(Var1, Var2, fill = value), color = "white") +
+  geom_text(aes(Var1, Var2, label = paste0(round(value * 100), "%")),
+            size = 3) +
+  labs(title = "Arabica Correlation Heatmap") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
+```
+
+```{r}
+ggplot(robusta_melted_correlation) +
+  geom_tile(mapping = aes(Var1, Var2, fill = value), color = "white") +
+  geom_text(aes(Var1, Var2, label = paste0(round(value * 100), "%")),
+            size = 3) +
+  labs(title = "Robusta Correlation Heatmap") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
+```
+
+```{r}
+ggplot(combined_melted_correlation) +
+  geom_tile(mapping = aes(Var1, Var2, fill = value), color = "white") +
+  geom_text(aes(Var1, Var2, label = paste0(round(value * 100), "%")),
+            size = 3) +
+  labs(title = "Arabica & Robusta Correlation Heatmap") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
+```
+
+### Analysis on the key difference between Arabica and Robusta
 
 
 
