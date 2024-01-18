@@ -62,7 +62,7 @@ To overcome limitations in the dataset, addressing the variability constraint in
 
 1. Implemented installation and loading of essential packages as part of the initial steps in the configuration of the environment.
 
-```{r tidyverse and janitor}
+```{r, results = 'hide' }
 install.packages("tidyverse")
 library(tidyverse)
 library(janitor)
@@ -227,12 +227,12 @@ write.csv(combined_coffee_data, "combined_coffee_data.csv", row.names = FALSE)
 ### Preparation of the environment for analysis
 So that I can transform data from wide to long format, I installed the reshape2 package.
 
-```{r}
+```{r, results = 'hide'}
 install.packages("reshape2")
 library(reshape2)
 ```
 
-### Identification of Key Quality Factor of a Coffee Bean
+### TASK 1: Identification of Key Quality Factor of a Coffee Bean
 To identify the key quality factors significantly influencing the overall quality of a coffee bean, I employed correlation calculations between the sensory values of the coffee bean and the total cup points.
 
 I decided to compare correlation between aroma, flavor, aftertaste, acidity, body, balance, uniformity, clean cup, sweetness, cupper points and total cup points. This will be applied to arabica, robusta and their combined data for further analysis.
@@ -297,7 +297,236 @@ ggplot(combined_melted_correlation) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
 ```
 
-### Analysis on the key difference between Arabica and Robusta
+### TASK 2: Analysis on the key difference between Arabica and Robusta
+I calculated the mean values of each sensory quality for Arabica and Robusta beans, enabling a side-by-side comparison through visualization. Subsequently, results were consolidated into a single dataframe and were melted.
+
+```{r message = FALSE}
+mean_arabica <- colMeans(arabica_trimmed_data[, 13:22], na.rm = TRUE)
+mean_robusta <- colMeans(robusta_trimmed_data[, 13:22], na.rm = TRUE)
+
+mean_sensory_values <- data.frame(
+  Attribute = names(mean_arabica),
+  Arabica = mean_arabica,
+  Robusta = mean_robusta
+)
+
+melted_mean_sensory <- melt(mean_sensory_values)
+
+ggplot(data = melted_mean_sensory) +
+  geom_bar(mapping = aes(x = Attribute, y = value, fill = variable),
+           stat = "identity", position = "dodge", color = "white") +
+  labs(title = "Comparison of Mean Sensory Attributes: Arabica vs Robusta",
+       y = "Mean Value",
+       x = "Sensory Attribute",
+       fill = "Species") +
+  theme_minimal() +
+  theme(axis.text.x =  element_text(angle = 45, vjust = 1, size = 10,
+                                    hjust = 1))
+```
+
+### TASK 3: Checking what countries that consistently produce higher-quality beans
+To determine the leading producers of high-quality coffee, I computed the average total cup points for each country.
+
+```{r}
+arabica_quality_country <-
+  aggregate(arabica_trimmed_data[, 13:23],
+            by = list(country = arabica_trimmed_data$country_of_origin),
+            FUN = mean)
+
+robusta_quality_country <-
+  aggregate(robusta_trimmed_data[, 13:23],
+            by = list(country = robusta_trimmed_data$country_of_origin),
+            FUN = mean)
+
+combined_quality_country <-
+  aggregate(combined_coffee_data[, 13:23],
+            by = list(country = combined_coffee_data$country_of_origin),
+            FUN = mean)
+
+arabica_quality_country <-
+  arabica_quality_country[order(-arabica_quality_country$total_cup_points), ]
+
+robusta_quality_country <-
+  robusta_quality_country[order(-robusta_quality_country$total_cup_points), ]
+
+combined_quality_country <-
+  combined_quality_country[order(-combined_quality_country$total_cup_points), ]
+```
+
+Following the calculation of average total cup points for each country, I proceeded to create a bar graph for a visual representation of the top-performing countries.
+
+```{r}
+# for arabica
+ggplot(data = arabica_quality_country) +
+  geom_bar(mapping = aes(x = reorder(country, -total_cup_points),
+                         y = total_cup_points),
+           stat = "identity", fill = "red") +
+  labs(title = "Top Quality Producing Countries for Arabica",
+       x = "Country of Origin",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# for robusta
+ggplot(data = robusta_quality_country) +
+  geom_bar(mapping = aes(x = reorder(country, -total_cup_points),
+                         y = total_cup_points),
+           stat = "identity", fill = "red") +
+  labs(title = "Top Quality Producing Countries for Robusta",
+       x = "Country of Origin",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# for combined data:
+ggplot(data = combined_quality_country) +
+  geom_bar(mapping = aes(x = reorder(country, -total_cup_points),
+                         y = total_cup_points),
+           stat = "identity", fill = "red") +
+  labs(title = "Top Overall Quality Coffee Producing Countries",
+       x = "Country of Origin",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### TASK 4: Identifying Top Owners based on Top Countries
+
+To identify the leading coffee producers within specific countries, I filtered the data frames for Arabica, focusing on the United States, Papua New Guinea, Ethiopia, Japan, and Kenya. Subsequently, I organized the results in descending order based on the mean total cup points. However, to gain insights into consistent high-quality coffee production by species, I chose to extract the top 10 owners irrespective of their respective countries.
+
+```{r message = FALSE}
+# Filtering the data based on the top countries producing arabica
+filtered_arabica_country <- c("United States", "Papua New Guinea",
+                              "Ethiopia", "Japan", "Kenya")
+
+# Grouping owners by country
+grouped_owners_arabica <- arabica_trimmed_data %>%
+  filter(country_of_origin %in% filtered_arabica_country) %>%
+  group_by(owner, country_of_origin) %>%
+  summarise(mean_total_cup_points = mean(total_cup_points, na.rm = TRUE)) %>%
+  arrange(-mean_total_cup_points)
+
+grouped_owners_robusta <- robusta_trimmed_data %>%
+  group_by(owner, country_of_origin) %>%
+  summarise(mean_total_cup_points = mean(total_cup_points, na.rm = TRUE)) %>%
+  arrange(-mean_total_cup_points)
+
+# Identifying top 10 owners that produces quality coffee bean
+top_owners_arabica <- head(grouped_owners_arabica, 10)
+top_owners_robusta <- head(grouped_owners_robusta, 10)
+
+print(top_owners_arabica)
+print(top_owners_robusta)
+```
+
+I utilized a bar graph for a visual examination of the top 10 coffee owners for each coffee bean specie.
+
+```{r}
+# top 10 coffee owners for arabica
+ggplot(data = top_owners_arabica) +
+  geom_bar(mapping = aes(x = reorder(owner, -mean_total_cup_points),
+                         y = mean_total_cup_points,
+                         fill = country_of_origin),
+           stat = "identity") +
+  labs(title = "Top 10 Owners that Produce Quality Arabica Beans",
+       x = "Name of Owner",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# top 10 coffee owners for robusta
+ggplot(data = top_owners_robusta) +
+  geom_bar(mapping = aes(x = reorder(owner, -mean_total_cup_points),
+                         y = mean_total_cup_points,
+                         fill = country_of_origin),
+           stat = "identity", position = "dodge") +
+  labs(title = "Top 10 Owners that Produce Quality Robusta Beans",
+       x = "Name of Owner",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+### TASK 5: Assessing whether the altitude at which coffee is grown has an impact on quality
+
+In order to analyze the potential impact of altitude on the overall quality of a coffee bean, I calculated the correlation between all sensory values and the average altitude.
+
+```{r}
+# Calculating correlation between sensory values and altitude
+altitude_correlation_arabica <-
+  cor(na.omit(arabica_trimmed_data[, c(13:23, 31)]))
+
+altitude_correlation_robusta <-
+  cor(na.omit(robusta_trimmed_data[, c(13:23, 31)]))
+
+# Melting data frame for use in ggplot
+melted_altitude_arabica <- melt(altitude_correlation_arabica)
+melted_altitude_robusta <- melt(altitude_correlation_robusta)
+```
+
+To visually explore the correlation between sensory values and average altitude, I created a heatmap.
+
+```{r}
+ggplot(melted_altitude_arabica) +
+  geom_tile(mapping = aes(Var1, Var2, fill = value), color = "white") +
+  geom_text(aes(Var1, Var2, label = paste0(round(value * 100), "%")),
+            size = 3) +
+  labs(title = "Heatmap: Sensory Values vs Average Altitude - Arabica") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
+
+
+ggplot(melted_altitude_robusta) +
+  geom_tile(mapping = aes(Var1, Var2, fill = value), color = "white") +
+  geom_text(aes(Var1, Var2, label = paste0(round(value * 100), "%")),
+            size = 3) +
+  labs(title = "Heatmap: Sensory Values vs Average Altitude - Robusta") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
+```
+
+To have other insights, I decided to visualize it through a scatterplot
+```{r warning = FALSE}
+# for arabica
+ggplot(data = arabica_trimmed_data) +
+  geom_point(mapping = aes(x = total_cup_points, y = altitude_mean_meters)) +
+  labs(title = "Scatterplot of Total Cup Points vs Average Altitude (Arabica)",
+       x = "Total Cup Points",
+       y = "Average Altitude")
+
+# for robusta
+ggplot(data = robusta_trimmed_data) +
+  geom_point(mapping = aes(x = total_cup_points, y = altitude_mean_meters)) +
+  labs(title = "Scatterplot of Total Cup Points vs Average Altitude (Robusta)",
+       x = "Total Cup Points",
+       y = "Average Altitude")
+```
+
+Following the analysis of the scatterplot results, I further examined the altitude ranges associated with the top 5 countries for both Arabica and Robusta. This additional investigation provides valuable insights into the elevation preferences associated with the production of high-quality coffee in these regions.
+
+```{r}
+# Analyzing what range of altitude does the top quality producing countries have
+grouped_altitude_arabica <- arabica_trimmed_data %>%
+  filter(country_of_origin %in% filtered_arabica_country) %>%
+  group_by(country_of_origin) %>%
+  summarise(AvgAltLow = mean(altitude_low_meters, na.rm = TRUE),
+            AvgAltHigh = mean(altitude_high_meters, na.rm = TRUE),
+            mean_total_cup_points = mean(total_cup_points, na.rm = TRUE)) %>%
+  arrange(-mean_total_cup_points)
+
+grouped_altitude_robusta <- robusta_trimmed_data %>%
+  group_by(country_of_origin) %>%
+  summarise(AvgAltLow = mean(altitude_low_meters, na.rm = TRUE),
+            AvgAltHigh = mean(altitude_high_meters, na.rm = TRUE),
+            mean_total_cup_points = mean(total_cup_points, na.rm = TRUE)) %>%
+  arrange(-mean_total_cup_points)
+
+print(grouped_altitude_arabica)
+print(grouped_altitude_robusta)
+```
 
 
 
