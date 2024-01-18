@@ -1,0 +1,232 @@
+---
+title: "Optimizing Coffee Quality Through Data-driven Farming"
+author: "Derrick Adrian E. Payas"
+date: "January 10, 2024"
+output: html_document
+---
+
+
+
+# Ask Phase
+
+
+### Business Task
+
+#### Objective
+To optimize the quality of coffee production for the Coffee Quality Institute that sources both Arabica and Robusta beans through:
+
+* Identifying the key quality factors most significantly contributing to the overall quality of the coffee beans.
+* Comparison of Arabica and Robusta beans. Are there specific characteristics that make one type of coffee bean consistently score higher than the other?
+* Careful inspection if there are specific countries of origin that consistently produce higher-quality coffee beans.
+* Evaluation of the impact of different farmers, mills and farms on the quality of coffee. Identify farmers or farms that consistently producing high-quality beans
+* Assessing whether the altitude at which coffee is grown has an impact on quality.
+* Providing recommendation for the Institute's sourcing strategy.
+
+### Key Stakeholders
+* Coffee Quality Institute (CQI): a non-profit organization dedicated to improving the quality of coffee and the lives of the people that produce it. Established in 1996, CQI works with the global coffee community, including farmers, producers, and industry stakeholders.
+* Farmers: individuals engaged in the cultivation of coffee.
+
+### Dataset
+The dataset was obtained through the [GitHub](https://github.com/jldbc/coffee-quality-database) Repo of James LeDoux. He obtained the dataset from the database of CQI through a scraper.
+
+
+
+# Prepare Phase
+
+
+### Data Source:
+The dataset was obtained from the Coffee Quality Institute's website in January 2018 using a scraping method. It comprises four CSV files, two of which contain uncleaned raw data sourced directly from the website. Given that the raw data were manually recorded with varying encodings, abbreviations, and units of measurement for fields such as farm names, altitude, region, and others, it is necessary to perform data cleaning to enhance the accuracy of the analysis. The dataset encompasses quality measures and farmers' information for two types of coffee beans: arabica and robusta.
+
+### Limitation:
+* The dataset is from January 2018, potentially missing recent improvements in coffee quality due to changes in farming practices.
+* The dataset focuses on only arabica and robusta beans, limiting generalizability to other coffee varieties.
+* Overrepresentation of certain regions or farm types could introduce bias into the analysis.
+* The dataset lacks information on changes in coffee bean quality over time, hindering trend assessment.
+
+### Future Exploration:
+To overcome limitations in the dataset, addressing the variability constraint in bean types can be achieved by collecting additional datasets covering a wider range of coffee varieties, through collaboration with other coffee institutions. The 2018 dataset can be alleviated by implementing data collection from the  recent data of the Coffee Quality Institute.
+
+
+
+
+# Process Phase
+
+### Initial pass-through in spreadsheet
+* The column header in the 'robusta_data_cleaned.csv' file has been updated to align with the column header of the 'arabica_data_cleaned.csv' file to ensure a seamless merging process in R without any complications.
+* Aligned the columns in 'robusta_data_cleaned.csv' to match the column sequence of 'arabica_data_cleaned.csv' to facilitate a seamless merging process.
+* Reviewed and rectified data entry errors by employing the sort and filter feature. This effort aims to ensure data integrity before proceeding with further analysis.
+* Used conditional formatting feature to check data entry errors. 
+* Standardized the formatting of cells containing numerical values to ensure appropriate format for the analysis.
+
+### Transformation and Exploration of data with R
+
+1. Implemented installation and loading of essential packages as part of the initial steps in the configuration of the environment.
+
+```{r tidyverse and janitor}
+install.packages("tidyverse")
+library(tidyverse)
+library(janitor)
+```
+
+2. Imported datasets from csv files
+
+```{r}
+arabica_cleaned_data <- read.csv("arabica_data_cleaned.csv")
+robusta_cleaned_data <- read.csv("robusta_data_cleaned.csv")
+```
+
+3. Conducted exploration from both dataframes to gain familiarity and identify key variables essential for subsequent analysis.
+
+```{r, results = 'hide'}
+str(arabica_cleaned_data)
+str(robusta_cleaned_data)
+summary(arabica_cleaned_data)
+summary(robusta_cleaned_data)
+head(arabica_cleaned_data)
+head(robusta_cleaned_data)
+```
+
+4. Assessing the column index for each variable to identify and filter out non-significant features as part of the data analysis process.
+
+```{r, results = 'hide'}
+print(data.frame(Column_Name = names(arabica_cleaned_data)))
+print(data.frame(Column_Name = names(robusta_cleaned_data)))
+```
+
+5. Dropping unrelated variables in each data frames. 
+
+```{r results = 'hide'}
+arabica_trimmed_data <- arabica_cleaned_data %>%
+  select(-1, -6, -8, -10, -13, -14, -15, -16, -37, -38, -39, -40, -41)
+
+robusta_trimmed_data <- robusta_cleaned_data %>%
+  select(-1, -6, -8, -10, -13, -14, -15, -16, -37, -38, -39, -40, -41)
+```
+
+#### List of variables dropped:
+               Column_Name            Reason for dropping the variable
+             
+                         X            This column contains just column numbers
+                Lot.Number            Irrelevant for analysis
+                ICO.Number            Irrelevant for analysis
+                  Altitude            A Range. Has been separated for more accuracy
+            Number.of.Bags            No significance to the analysis
+                Bag.Weight            No significance to the analysis
+        In.Country.Partner            No significance to the analysis
+              Harvest.Year            Dropped, as grading date is more accurate
+                Expiration            Irrelevant for analysis
+        Certification.Body            Irrelevant for analysis
+     Certification.Address            Irrelevant for analysis
+     Certification.Contact            Irrelevant for analysis
+       unit_of_measurement            Irrelevant for analysis
+
+6. Examining missing values to assess their potential impact on the subsequent analysis.
+
+```{r}
+sum(is.na(arabica_trimmed_data))
+sum(is.na(robusta_trimmed_data))
+```
+Given the substantial number of missing values, especially in the altitude variable of the dataset, I decided against removing those rows. This choice is intended to prevent the unintentional deletion of relevant information, ensuring the accuracy of my analysis.
+
+7. Conducting an assessment for duplicate values
+
+```{r}
+sum(duplicated(arabica_trimmed_data))
+sum(duplicated(robusta_trimmed_data))
+```
+
+It revealed the absence of any duplications in both data frames.
+
+8. Aligning variable names for uniformity to enhance readability and facilitate easier coding.
+
+```{r results = 'hide'}
+arabica_trimmed_data <- janitor::clean_names(arabica_trimmed_data)
+robusta_trimmed_data <- janitor::clean_names(robusta_trimmed_data)
+print(data.frame(Column_Name = names(arabica_trimmed_data)))
+print(data.frame(Column_Name = names(robusta_trimmed_data)))
+```
+
+9. Identification and handling of potential outliers that can skew the result of the analysis
+
+```{r arabica_trimmed_data through descriptive statistics}
+min(arabica_trimmed_data$total_cup_points)
+mean(arabica_trimmed_data$total_cup_points)
+max(arabica_trimmed_data$total_cup_points)
+```
+
+```{r robusta_trimmed_data through descriptive statistics}
+min(robusta_trimmed_data$total_cup_points)
+mean(robusta_trimmed_data$total_cup_points)
+max(robusta_trimmed_data$total_cup_points)
+```
+
+10. Utilizing visualization tools for the purpose of outlier identification.
+
+```{r message = FALSE}
+ggplot(data = arabica_trimmed_data) +
+  geom_histogram(mapping = aes(x = total_cup_points, fill = "Brown")) +
+  labs(
+    title = "Histogram of Arabica Total Cup Points",
+    x = "Total Cup Points",
+    y = "Count of Beans"
+  )
+```
+
+```{r message = FALSE}
+ggplot(data = robusta_trimmed_data) +
+  geom_histogram(mapping = aes(x = total_cup_points, fill = "Brown")) +
+  labs(
+    title = "Histogram of Robusta Total Cup Points",
+    x = "Total Cup Points",
+    y = "Count of Beans"
+  )
+```
+
+Upon identifying outliers, I focused into the data to investigate the root causes and determine whether they should be retained or removed. This examination aims to provide understanding for informed decision-making in subsequent analyses.
+
+11. Removing an outlier attributed to potential data entry error.
+
+Upon review, it appears that one bean was scored incorrectly, receiving a score of zero due to an incomplete assessment. Consequently, I have opted to exclude it from the dataset to prevent potential distortion of the analysis results.
+
+```{r}
+arabica_trimmed_data <- arabica_trimmed_data %>%
+  filter(total_cup_points > 0)
+```
+
+12. To dig deeper into the analysis, I decided to change the date from strings to a proper date format. But, some dates had words like "th" in them, like "April 4th, 2016." So, I used a package called 'stringr' to capture only the numbers and then changed it into a proper date format using another package called 'lubridate.'.
+
+```{r Convert date for arabica_trimmed_data}
+arabica_trimmed_data$grading_date <-
+  mdy(str_replace_all(arabica_trimmed_data$grading_date,
+                      "\\b(\\d+)th\\b", "\\1"))
+```
+
+```{r Convert date for robusta_trimmed_data}
+robusta_trimmed_data$grading_date <-
+  mdy(str_replace_all(robusta_trimmed_data$grading_date,
+                      "\\b(\\d+)th\\b", "\\1"))
+```
+
+13. Combining both data frames in preparation for the overall analysis 
+
+```{r}
+combined_coffee_data <- rbind(arabica_trimmed_data, robusta_trimmed_data)
+```
+
+14. Exporting csv file for safe keeping and further analysis
+
+```{r}
+write.csv(arabica_trimmed_data, "arabica_trimmed_data.csv", row.names = FALSE)
+write.csv(robusta_trimmed_data, "robusta_trimmed_data.csv", row.names = FALSE)
+write.csv(combined_coffee_data, "combined_coffee_data.csv", row.names = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
