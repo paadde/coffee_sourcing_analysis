@@ -2,7 +2,9 @@
 title: "Optimizing Coffee Quality Through Data-driven Farming"
 author: "Derrick Adrian E. Payas"
 date: "January 10, 2024"
-output: html_document
+output:
+  md_document:
+    variant: gfm 
 ---
 
 
@@ -18,7 +20,7 @@ To optimize the quality of coffee production for the Coffee Quality Institute th
 * Identifying the key quality factors most significantly contributing to the overall quality of the coffee beans.
 * Comparison of Arabica and Robusta beans. Are there specific characteristics that make one type of coffee bean consistently score higher than the other?
 * Careful inspection if there are specific countries of origin that consistently produce higher-quality coffee beans.
-* Evaluation of the impact of different farmers, mills and farms on the quality of coffee. Identify farmers or farms that consistently producing high-quality beans
+* Evaluation of Owner's producing higher-quality coffee beans.
 * Assessing whether the altitude at which coffee is grown has an impact on quality.
 * Providing recommendation for the Institute's sourcing strategy.
 
@@ -528,6 +530,192 @@ print(grouped_altitude_arabica)
 print(grouped_altitude_robusta)
 ```
 
+
+# Share Phase
+
+### Business Task 1: Identifying the key quality factors most significantly contributing to the overall quality of the coffee beans.
+
+To know why coffee beans are good or bad, we must first understand what makes them that way:
+
+1.  Aroma         -Smell of dry coffee, wet coffee at crust break, and wet coffee as it steeps
+2.  Flavor        -Mid-range notes in between first impression and aftertaste
+3.  Aftertaste    -Length and quality of enjoyable flavor after the coffee is swallowed
+4.  Acidity       -Brightness (Good), Sour (Bad)
+5.  Body          -Tactile feeling between tongue and mouth
+6.  Balance       -Balance of flavor, aftertaste, body and acidity
+7.  Uniformity    -Consistency of flavor across cups
+8.  Clean cup     -Lacking negative taste from the beginning to end of taste
+9.  Sweetness     -Sugary flavor (Good), Astringency flavor (Bad)
+10. Cupper points -Holistic score by Cupper
+
+The analysis reveals that there are 3 most crucial sensory aspects for coffee bean quality. These three factors are interconnected, meaning changes in one affect the others, directly impacting the overall quality. Interestingly, having high Sweetness doesn't guarantee a good cup of coffee; what truly matters in the end is the combination of Flavor, Aftertaste, and Balance. In conclusion, understanding the relationship between this 3 factors is key to assessing the overall quality of coffee beans.
+
+```{r, echo = FALSE}
+ggplot(combined_melted_correlation) +
+  geom_tile(mapping = aes(Var1, Var2, fill = value), color = "white") +
+  geom_text(aes(Var1, Var2, label = paste0(round(value * 100), "%")),
+            size = 3) +
+  labs(title = "Arabica & Robusta Correlation Heatmap") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
+```
+
+### Business Task 2: Comparison of Arabica and Robusta beans. Are there specific characteristics that make one type of coffee bean consistently score higher than the other?
+
+In nearly all sensory aspects, both arabica and robusta show similar results. The main difference lies in arabica having notably higher sweetness points. However, robusta scores slightly higher in other aspects, with a minimal margin compared to arabica. Upon closer examination of the data, it seems this could be due to arabica having a larger sample size and a wider range of ratings. Despite these nuances, the overall difference is not substantial, and they are nearly identical.
+
+```{r, echo = FALSE}
+ggplot(data = melted_mean_sensory) +
+  geom_bar(mapping = aes(x = Attribute, y = value, fill = variable),
+           stat = "identity", position = "dodge", color = "white") +
+  labs(title = "Comparison of Mean Sensory Attributes: Arabica vs Robusta",
+       y = "Mean Value",
+       x = "Sensory Attribute",
+       fill = "Species") +
+  theme_minimal() +
+  theme(axis.text.x =  element_text(angle = 45, vjust = 1, size = 10,
+                                    hjust = 1))
+```
+
+### Business Task 3: Careful inspection if there are specific countries of origin that consistently produce higher-quality coffee beans.
+
+The top Arabica-producing countries are headed by the United States, followed by Papua New Guinea, Ethiopia, Japan, and Kenya. Interestingly, India, despite securing the least favorable rating for Arabica, achieves the 2nd position for Robusta production. This intriguing contrast suggests a potential avenue for future exploration to understand the underlying factors influencing quality and production in India for both Arabica and Robusta coffee varieties.
+
+For Robusta, the leading countries are Uganda, India, Ecuador, the United States, and Vietnam. When considering the combined production of Arabica and Robusta, Papua New Guinea emerges as the consistent top performer, followed by Ethiopia, Japan, the United States, and Kenya.
+
+```{r, echo = FALSE}
+# for arabica
+ggplot(data = arabica_quality_country) +
+  geom_bar(mapping = aes(x = reorder(country, -total_cup_points),
+                         y = total_cup_points),
+           stat = "identity", fill = "red") +
+  labs(title = "Top Quality Producing Countries for Arabica",
+       x = "Country of Origin",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# for robusta
+ggplot(data = robusta_quality_country) +
+  geom_bar(mapping = aes(x = reorder(country, -total_cup_points),
+                         y = total_cup_points),
+           stat = "identity", fill = "red") +
+  labs(title = "Top Quality Producing Countries for Robusta",
+       x = "Country of Origin",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# for combined data:
+ggplot(data = combined_quality_country) +
+  geom_bar(mapping = aes(x = reorder(country, -total_cup_points),
+                         y = total_cup_points),
+           stat = "identity", fill = "red") +
+  labs(title = "Top Overall Quality Coffee Producing Countries",
+       x = "Country of Origin",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+### Business Task 4: Evaluation of Owner's producing higher-quality coffee beans.
+
+The top owners producing higher quality Arabica coffee beans showcase a notable concentration in Ethiopia, with companies like Metad PLC, Yidnekachew Dabessa, Diamond Enterprise PLC, and Mohammed Lalo securing the leading positions. This suggests a distinct prominence of Ethiopian coffee growers in consistently delivering high-quality Arabica beans.
+
+```{r, echo = FALSE}
+ggplot(data = top_owners_arabica) +
+  geom_bar(mapping = aes(x = reorder(owner, -mean_total_cup_points),
+                         y = mean_total_cup_points,
+                         fill = country_of_origin),
+           stat = "identity") +
+  labs(title = "Top 10 Owners that Produce Quality Arabica Beans",
+       x = "Name of Owner",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+On the other hand, the top owners in Robusta coffee production highlight Uganda's excelence, with organizations such as Katuka Development Trust, Ankole Coffee Producers Coop., Ugacof, and Kasozi Coffee Farmers Association securing top positions. Notably, Nishant Gurjer from India also stands out among the top Robusta producers.
+
+```{r, echo = FALSE}
+ggplot(data = top_owners_robusta) +
+  geom_bar(mapping = aes(x = reorder(owner, -mean_total_cup_points),
+                         y = mean_total_cup_points,
+                         fill = country_of_origin),
+           stat = "identity", position = "dodge") +
+  labs(title = "Top 10 Owners that Produce Quality Robusta Beans",
+       x = "Name of Owner",
+       y = "Average Total Cup Points") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+
+### Business Task 5:  Assessing whether the altitude at which coffee is grown has an impact on quality.
+
+The correlation analysis between overall coffee quality rating and the altitude of coffee bean plantations reveals relatively low correlations of 0.15 for Arabica and 0.31 for Robusta. Despite the numerical correlation being modest, a pattern emerges from the scatterplot, indicating that coffee beans planted at altitudes between 1000 to 2000 meters tend to exhibit higher quality ratings, particularly in the 81 to 85 range.
+
+```{r, echo = FALSE}
+ggplot(melted_altitude_arabica) +
+  geom_tile(mapping = aes(Var1, Var2, fill = value), color = "white") +
+  geom_text(aes(Var1, Var2, label = paste0(round(value * 100), "%")),
+            size = 3) +
+  labs(title = "Heatmap: Sensory Values vs Average Altitude - Arabica") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
+
+
+ggplot(melted_altitude_robusta) +
+  geom_tile(mapping = aes(Var1, Var2, fill = value), color = "white") +
+  geom_text(aes(Var1, Var2, label = paste0(round(value * 100), "%")),
+            size = 3) +
+  labs(title = "Heatmap: Sensory Values vs Average Altitude - Robusta") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1))
+```
+
+```{r, echo = FALSE, warning = FALSE}
+ggplot(data = arabica_trimmed_data) +
+  geom_point(mapping = aes(x = total_cup_points, y = altitude_mean_meters)) +
+  labs(title = "Scatterplot of Total Cup Points vs Average Altitude (Arabica)",
+       x = "Total Cup Points",
+       y = "Average Altitude")
+
+ggplot(data = robusta_trimmed_data) +
+  geom_point(mapping = aes(x = total_cup_points, y = altitude_mean_meters)) +
+  labs(title = "Scatterplot of Total Cup Points vs Average Altitude (Robusta)",
+       x = "Total Cup Points",
+       y = "Average Altitude")
+```
+
+To validate this pattern, I examined the average elevation of top Arabica and Robusta-producing countries, finding a consistent range of 1300 to 1900 meters. However, exceptions exist, as evidenced by Japan's high-rated Arabica beans cultivated at 170 meters and Ecuador's Robusta Coffee, which thrives at just 40 meters altitude. This suggests that while the general trend shows a preference for higher altitudes, exceptional coffee beans with high ratings can still be found at lower elevations.
+
+```{r, echo = FALSE}
+print(grouped_altitude_arabica)
+print(grouped_altitude_robusta)
+```
+
+### Visualization Dashboard (Tableau)
+I've created a visualization dashboard on Tableau to provide a detailed view and support the findings of the analysis mentioned earlier. This interactive dashboard enables you to filter and explore specific details about the types of coffee beans. You can access the live dashboard through the following [link](https://public.tableau.com/app/profile/derrick.adrian.payas/viz/CoffeeCaseStudy_17055896164740/Dashboard1).
+
+![Coffee Case Study Dashboard](coffee_bean_dashboard.png)
+
+
+
+# Act Phase
+Based on the analysis, the Coffee Quality Institute (CQI) could refine its sourcing strategy in several ways:
+
+* **Focus on Flavor, Aftertaste, and Balance:** Prioritize the selection of coffee beans based on Flavor, Aftertaste, and Balance, recognizing that these factors significantly contribute to overall quality.
+* **Consider Preferences Over Bean Type:** Acknowledge that Arabica and Robusta beans exhibit similar overall quality, with nuanced differences. Recognize that sweetness alone does not determine a higher quality cup. Tailoring sourcing decisions based on consumer preferences, whether for Arabica or Robusta, becomes essential.
+* **Explore Varied Origins:** While certain countries consistently produce high-quality beans, explore the intriguing contrast seen in India, which ranks low for Arabica but excels in Robusta. Consider this as an opportunity for in-depth exploration into the factors influencing quality and production in diverse regions.
+* **Recognize Top Owners per Bean Specie:** Recognize the significant presence of leading Arabica producers in Ethiopia and notable Robusta producers in Uganda. Highlight the exceptional performance of specific owners such as Metad PLC and Katuka Development Trust. Explore the possibility of cultivating strong relationships with these owners to ensure a reliable and steady supply of high-quality coffee beans.
+* **Altitude Consideration and Flexibility:** Note the modest correlation between altitude and coffee quality, with a preference for beans grown between 1000 to 2000 meters. However, maintain flexibility as exceptions exist, such as Japan's high-rated Arabica beans grown at 170 meters and Ecuador's Robusta thriving at 40 meters. While a general preference for higher altitudes exists, recognize exceptional beans at lower elevations.
+* **Future Exploration:** It would be nice to conduct a thorough examination into the potential influence of coffee bean varieties on quality. Similarly, explore the direct impact of different processing methods on overall coffee bean quality. We should also consider tracking the latest updates in the Coffee Quality Institute (CQI) Database to compare results from both historical and recent assessments. This comparative analysis will offer a more understanding of the evolving trends in coffee quality over time.
 
 
 
